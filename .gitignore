@@ -1,0 +1,9 @@
+# React ve Node.js için gereksiz klasörler
+node_modules/
+build/
+dist/
+.env
+.DS_Store
+.vscode/
+npm-debug.log
+yarn-error.log
