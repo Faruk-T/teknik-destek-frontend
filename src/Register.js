@@ -1,6 +1,21 @@
 import React, { useState } from "react";
-import { Box, Typography, TextField, Button, Alert, Paper, InputAdornment, IconButton } from "@mui/material";
+import { 
+  Box, 
+  Typography, 
+  TextField, 
+  Button, 
+  Alert, 
+  Paper, 
+  InputAdornment, 
+  IconButton,
+  Container
+} from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+
+// Backend Adresini Buraya Sabitliyoruz (Garanti Çözüm)
+// Eski: const API_BASE_URL = "http://localhost:5106";
+// YENİSİ (Bunu Yapıştır):
+import { API_BASE_URL } from './config';
 
 function Register({ onRegisterSuccess, onBack }) {
   const [form, setForm] = useState({
@@ -10,9 +25,11 @@ function Register({ onRegisterSuccess, onBack }) {
     sirketAdi: "",
     email: "",
     telefon: "",
-    rol: "musteri"  // Rol burada varsayılan müşteri olarak set edilmiş
+    rol: "musteri"
   });
+  
   const [mesaj, setMesaj] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
@@ -22,83 +39,100 @@ function Register({ onRegisterSuccess, onBack }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMesaj("");
+    setIsSuccess(false);
+
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/Kullanici`, {
+      console.log("Kayıt isteği gönderiliyor...", `${API_BASE_URL}/api/Kullanici`);
+      
+      const response = await fetch(`${API_BASE_URL}/api/Kullanici`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          rol: "musteri"  // Backend'e kesin müşteri rolü gönderiliyor
-        })
+        body: JSON.stringify(form)
       });
 
       if (response.ok) {
-        setMesaj("Kayıt başarılı! Artık giriş yapabilirsiniz.");
+        setIsSuccess(true);
+        setMesaj("✅ Kayıt başarılı! Giriş ekranına yönlendiriliyorsunuz...");
+        // 1.5 saniye sonra giriş ekranına dön
         setTimeout(() => onRegisterSuccess(), 1500);
       } else {
         const data = await response.json();
+        // Backend'den gelen hata mesajını göster
         if (data.message) {
-          setMesaj(data.message);
+          setMesaj(`❌ ${data.message}`);
         } else if (data.errors) {
-          setMesaj(Object.values(data.errors).flat().join(" | "));
+          // Validasyon hatalarını birleştir
+          const errorMessages = Object.values(data.errors).flat().join(" | ");
+          setMesaj(`⚠️ ${errorMessages}`);
         } else {
-          setMesaj("Kayıt başarısız!");
+          setMesaj("❌ Kayıt başarısız! Bilgileri kontrol edin.");
         }
       }
-    } catch {
-      setMesaj("Sunucuya ulaşılamıyor!");
+    } catch (err) {
+      console.error("Kayıt Hatası:", err);
+      setMesaj("🔌 Sunucuya ulaşılamıyor! Backend'in çalıştığından emin olun (https://localhost:7196).");
     }
   };
 
   return (
-    <Paper sx={{ p: 3 }}>
-      <Typography variant="h6" gutterBottom>
-        Kayıt Ol
-      </Typography>
-      <Box component="form" onSubmit={handleSubmit}>
-        <TextField fullWidth label="Kullanıcı Adı" name="kullaniciAdi" value={form.kullaniciAdi} onChange={handleChange} margin="normal" required />
-        <TextField
-          fullWidth
-          label="Şifre"
-          name="sifre"
-          type={showPassword ? "text" : "password"}
-          value={form.sifre}
-          onChange={handleChange}
-          margin="normal"
-          required
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  onClick={() => setShowPassword(!showPassword)}
-                  edge="end"
-                >
-                  {showPassword ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
-        <TextField fullWidth label="Ad Soyad" name="adSoyad" value={form.adSoyad} onChange={handleChange} margin="normal" required />
-        <TextField fullWidth label="Şirket Adı" name="sirketAdi" value={form.sirketAdi} onChange={handleChange} margin="normal" required />
-        <TextField fullWidth label="E-posta" name="email" type="email" value={form.email} onChange={handleChange} margin="normal" required />
-        <TextField fullWidth label="Telefon" name="telefon" value={form.telefon} onChange={handleChange} margin="normal" required />
+    <Container maxWidth="xs">
+      <Paper elevation={3} sx={{ p: 4, mt: 2, borderRadius: 2 }}>
+        <Typography variant="h5" align="center" gutterBottom sx={{ fontWeight: 'bold', color: '#2c3e50' }}>
+          📝 Kayıt Ol
+        </Typography>
+        
+        <Box component="form" onSubmit={handleSubmit}>
+          <TextField 
+            fullWidth label="Kullanıcı Adı" name="kullaniciAdi" 
+            value={form.kullaniciAdi} onChange={handleChange} margin="normal" required 
+          />
+          
+          <TextField
+            fullWidth
+            label="Şifre"
+            name="sifre"
+            type={showPassword ? "text" : "password"}
+            value={form.sifre}
+            onChange={handleChange}
+            margin="normal"
+            required
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+          
+          <TextField fullWidth label="Ad Soyad" name="adSoyad" value={form.adSoyad} onChange={handleChange} margin="normal" required />
+          <TextField fullWidth label="Şirket Adı" name="sirketAdi" value={form.sirketAdi} onChange={handleChange} margin="normal" required />
+          <TextField fullWidth label="E-posta" name="email" type="email" value={form.email} onChange={handleChange} margin="normal" required />
+          <TextField fullWidth label="Telefon" name="telefon" value={form.telefon} onChange={handleChange} margin="normal" required />
 
-        <Button variant="contained" color="primary" fullWidth sx={{ mt: 2 }} type="submit">
-          Kayıt Ol
+          <Button 
+            variant="contained" 
+            fullWidth 
+            sx={{ mt: 3, mb: 2, py: 1.5, fontSize: '1rem', fontWeight: 'bold' }} 
+            type="submit"
+          >
+            Kayıt Ol
+          </Button>
+
+          {mesaj && (
+            <Alert severity={isSuccess ? "success" : "error"} sx={{ mt: 2 }}>
+              {mesaj}
+            </Alert>
+          )}
+        </Box>
+
+        <Button onClick={onBack} fullWidth sx={{ mt: 1, textTransform: 'none' }}>
+          ⬅ Girişe Dön
         </Button>
-
-        {mesaj && (
-          <Alert severity={mesaj.includes("başarılı") ? "success" : "error"} sx={{ mt: 2 }}>
-            {mesaj}
-          </Alert>
-        )}
-      </Box>
-
-      <Button onClick={onBack} sx={{ mt: 2 }} fullWidth>
-        Girişe Dön
-      </Button>
-    </Paper>
+      </Paper>
+    </Container>
   );
 }
 
